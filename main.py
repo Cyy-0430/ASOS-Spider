@@ -35,6 +35,7 @@ async def parse_article(article_page):
         print(f"解析失败，状态码{resp.status_code} {article_page}")
         return
 
+    print(f"正在下载{article_page}", end="\r")
     soup = BeautifulSoup(resp.text, "lxml")
     title = soup.h1.text
     image_url = soup.find("img", {"alt": title})["src"]
