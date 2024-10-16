@@ -1,7 +1,7 @@
 import requests
 import asyncio
 from bs4 import BeautifulSoup
-from requests import ReadTimeout
+from requests import ReadTimeout, Response
 from soupsieve import SelectorSyntaxError
 from urllib3.exceptions import ReadTimeoutError
 
@@ -12,7 +12,11 @@ headers = {
 session = requests.session()
 
 async def get(url):
-    resp =  await asyncio.to_thread(session.get, url, headers=headers)
+    try:
+        resp =  await asyncio.to_thread(session.get, url, headers=headers)
+    except ReadTimeout and ReadTimeoutError:
+        resp = Response()
+        resp.status_code = 000
     return resp
 
 async def parse_page(page):
@@ -50,7 +54,10 @@ async def parse_article(article_page):
     title = str(title)
     if "/" in title:
         return
-    image_urls = soup.select(f'img[alt^="{title}"][src$=constrain]')
+    try:
+        image_urls = soup.select(f'img[alt^="{title}"][src$=constrain]')
+    except SelectorSyntaxError:
+        return
     image_tasks = [None] * len(image_urls)
     image_urls = [x["src"] for x in image_urls]
     for i, image_url in enumerate(image_urls):
@@ -83,8 +90,6 @@ async def main():
 if __name__ == '__main__':
     try:
         asyncio.run(main())
-    except ReadTimeoutError and ReadTimeout and SelectorSyntaxError:
-        pass
     except KeyboardInterrupt:
         print("程序退出")
         quit()
